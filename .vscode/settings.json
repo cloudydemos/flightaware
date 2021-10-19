@@ -1,0 +1,12 @@
+{
+    "azure-iot-edge.defaultPlatform": {
+        "platform": "arm32v7",
+        "alias": null
+    },
+    "azureFunctions.deploySubpath": "Edge-Functions\\modules\\DataFetcher/bin/Release/netstandard2.0/publish",
+    "azureFunctions.projectLanguage": "C#",
+    "azureFunctions.projectRuntime": "~4",
+    "debug.internalConsoleOptions": "neverOpen",
+    "azureFunctions.preDeployTask": "publish (functions)",
+    "azureFunctions.projectSubpath": "Edge-Functions\\modules\\DataFetcher"
+}
