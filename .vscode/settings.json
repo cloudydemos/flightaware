@@ -3,7 +3,7 @@
         "platform": "arm32v7",
         "alias": null
     },
-    "azureFunctions.deploySubpath": "Edge-Functions\\modules\\DataFetcher/bin/Release/netstandard2.0/publish",
+    "azureFunctions.deploySubpath": "Functions/bin/Release/net6.0/publish",
     "azureFunctions.projectLanguage": "C#",
     "azureFunctions.projectRuntime": "~4",
     "debug.internalConsoleOptions": "neverOpen",
