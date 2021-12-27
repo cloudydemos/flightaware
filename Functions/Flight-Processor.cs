@@ -33,7 +33,7 @@ namespace CloudyDemos.Aircraft
         private static readonly string _containerId = "flights";
         private static CosmosClient cosmosClient = new CosmosClient(Environment.GetEnvironmentVariable("cloudyaircraftdata_DOCUMENTDB"));
 
-        //[FunctionName("FlightProcessor")]
+        [FunctionName("FlightProcessor")]
         public static void Run([CosmosDBTrigger(
             databaseName: "Aircraft",
             collectionName: "flights",
