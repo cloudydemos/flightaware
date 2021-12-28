@@ -14,6 +14,7 @@ namespace CloudyDemos.Aircraft
         public string id { get; set; }
         public int count { get; set; }
         public double last_seen { get; set; }
+        public double closestDistanceInMetresFromMyLocation { get; set; }
     }
     public class Distinct_Flight_Processor
     {
@@ -32,7 +33,7 @@ namespace CloudyDemos.Aircraft
                 var flightsContainer = db.GetContainer(_flightsContainerId);
                 var flightSpotterContainer = db.GetContainer(_flightSpotterContainerId);
                 string query = Environment.GetEnvironmentVariable("queryDefinition");
-                if (string.IsNullOrEmpty(query)) query = "SELECT c.flight as id, COUNT(c.flight) as count, max(c.Timestamp) as last_seen FROM c group by c.flight";
+                if (string.IsNullOrEmpty(query)) query = "SELECT c.flight as id, COUNT(c.flight) as count, max(c.Timestamp) as last_seen, MIN(ST_DISTANCE({\"type\": \"Point\", \"coordinates\":[-95.80341, 29.75959]}, c.Location)) as closestDistanceInMetresFromMyLocation FROM c group by c.flight";
                 
                 using (FeedIterator<DistinctFlight> feedIterator = flightsContainer.GetItemQueryIterator<DistinctFlight>(query))
                 {
