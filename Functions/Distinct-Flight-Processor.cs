@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Microsoft.Azure.Documents;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Extensions.Logging;
@@ -21,6 +20,7 @@ namespace CloudyDemos.Aircraft
         private static readonly string _databaseId = "Aircraft";
         private static readonly string _flightsContainerId = "flights";
         private static readonly string _flightSpotterContainerId = "flight-spotter";
+        private static Microsoft.Azure.Cosmos.CosmosClient cosmosClient = new CosmosClient(Environment.GetEnvironmentVariable("cloudyaircraftdata_DOCUMENTDB"));
 
         [FunctionName("Distinct-Flight-Processor")]
         public void Run([TimerTrigger("0 0 8 * * *")]TimerInfo myTimer, ILogger log)
@@ -28,7 +28,6 @@ namespace CloudyDemos.Aircraft
             // Timer goes off each day at 8am UTC (2am CST)
             int counter = 0;
             try {
-                CosmosClient cosmosClient = new CosmosClient(Environment.GetEnvironmentVariable("cloudyaircraftdata_DOCUMENTDB"));
                 var db = cosmosClient.GetDatabase(_databaseId);
                 var flightsContainer = db.GetContainer(_flightsContainerId);
                 var flightSpotterContainer = db.GetContainer(_flightSpotterContainerId);

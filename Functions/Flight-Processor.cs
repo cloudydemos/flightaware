@@ -1,11 +1,11 @@
 using System;
+using System.IO;
+using System.Threading.Tasks;
 using System.Collections.Generic;
-using Microsoft.Azure.Documents;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Extensions.Logging;
 using Microsoft.Azure.Cosmos;
-using System.Threading.Tasks;
 using Newtonsoft.Json;
 
 namespace CloudyDemos.Aircraft
@@ -31,7 +31,7 @@ namespace CloudyDemos.Aircraft
     {
         private static readonly string _databaseId = "Aircraft";
         private static readonly string _containerId = "flights";
-        private static CosmosClient cosmosClient = new CosmosClient(Environment.GetEnvironmentVariable("cloudyaircraftdata_DOCUMENTDB"));
+        private static Microsoft.Azure.Cosmos.CosmosClient cosmosClient = new CosmosClient(Environment.GetEnvironmentVariable("cloudyaircraftdata_DOCUMENTDB"));
 
         [FunctionName("FlightProcessor")]
         public static void Run([CosmosDBTrigger(
@@ -39,15 +39,13 @@ namespace CloudyDemos.Aircraft
             collectionName: "flights",
             ConnectionStringSetting = "cloudyaircraftdata_DOCUMENTDB",
             LeaseCollectionName = "leases",
-            CreateLeaseCollectionIfNotExists = true)]IReadOnlyList<Document> input,
+            CreateLeaseCollectionIfNotExists = true)]IReadOnlyList<Flight> input,
             ILogger log)
         {
             if (input != null && input.Count > 0)
             {
                 try {
-                    foreach(Document doc in input) {
-
-                    Flight flight = JsonConvert.DeserializeObject<Flight>(doc.ToString());
+                    foreach(Flight flight in input) {
 
                     if(flight.location != null || flight.lat is null || flight.lon is null) 
                         continue;
