@@ -15,6 +15,9 @@ __azurite_*
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
+# Azurite
+__blobstorage__/
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
