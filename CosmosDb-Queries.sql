@@ -21,3 +21,11 @@ ROUND(ST_DISTANCE({"type": "Point", "coordinates":[-95.80341, 29.75959]}, c.Loca
 FROM c
 --where c.flight = "AAL1206"
 order by c.Timestamp
+
+-- Get a Timestamp for a period of time before now
+SELECT ROUND(DateTimeToTimestamp(DateTimeAdd("hh", -2, GetCurrentDateTime()))/1000) AS timestampTwoHoursAgo
+SELECT ROUND(DateTimeToTimestamp(DateTimeAdd("minute", -2, GetCurrentDateTime()))/1000) AS timestampTwoMinutesAgo
+SELECT ROUND(DateTimeToTimestamp(DateTimeAdd("minute", -3, GetCurrentDateTime()))/1000) AS timestampThreeMinutesAgo
+-- Get all flights that have come in recently (have to cut and paste output from queries above)
+SELECT * from c where c.Timestamp > 1641095820 and c.Timestamp <  1641095835
+SELECT * from c where c.Timestamp > 1641095732
