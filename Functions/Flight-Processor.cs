@@ -87,7 +87,6 @@ namespace CloudyDemos.Aircraft
                         
                         // Count this flight
                         this.telemetryClient.GetMetric(flight.id).TrackValue(1);
-
                     }
 
                 } catch(Exception ex) {

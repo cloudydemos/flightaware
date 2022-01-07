@@ -6,6 +6,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.23.0" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.CosmosDB" Version="3.0.10" />
+    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" Version="2.6.0" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Logging.ApplicationInsights" Version="3.0.30" />
     <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="4.0.1" />
   </ItemGroup>
