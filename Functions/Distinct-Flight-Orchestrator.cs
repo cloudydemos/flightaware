@@ -69,7 +69,7 @@ namespace CloudyDemos.Aircraft
             string query = "SELECT DISTINCT c.flight as id, 0 as count, 0 as last_seen, 0 as closestDistanceInMetresFromMyLocation FROM c";
             List<DistinctFlight> distinctFlights = new List<DistinctFlight>();
             
-            using (FeedIterator<DistinctFlight> feedIterator = flightSpotterContainer.GetItemQueryIterator<DistinctFlight>(query))
+            using (FeedIterator<DistinctFlight> feedIterator = flightsContainer.GetItemQueryIterator<DistinctFlight>(query))
             {
                 while (feedIterator.HasMoreResults)
                 {
@@ -79,7 +79,7 @@ namespace CloudyDemos.Aircraft
                     }
                 }
             }
-            log.LogInformation(string.Format("Found {0} items that need to be deleted.", distinctFlights.Count));
+            log.LogInformation(string.Format("Retrieved {0} Flights from the '{1}' container to be upserted into the '{2}' container.", distinctFlights.Count, _flightsContainerId, _flightSpotterContainerId));
             return distinctFlights.ToArray();
         }
 
