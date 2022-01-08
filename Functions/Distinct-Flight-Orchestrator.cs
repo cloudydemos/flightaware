@@ -91,7 +91,6 @@ namespace CloudyDemos.Aircraft
                 var flightsContainer = db.GetContainer(_flightsContainerId);
                 var flightSpotterContainer = db.GetContainer(_flightSpotterContainerId);
                 string query = string.Format(Query, distinctFlight.id);
-                log.LogInformation(string.Format("UpdateDistinctFlight Function triggered. Using Query: {0}", query));
                 
                 // We should get only one result
                 using (FeedIterator<DistinctFlight> feedIterator = flightsContainer.GetItemQueryIterator<DistinctFlight>(query))
