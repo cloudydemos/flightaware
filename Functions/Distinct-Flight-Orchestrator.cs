@@ -60,7 +60,8 @@ namespace CloudyDemos.Aircraft
                 parallelTasks.Add(task);
             }
 
-            await Task.WhenAll(parallelTasks);            
+            await Task.WhenAll(parallelTasks);
+                   
         }
 
         [FunctionName("GetFlights")]
@@ -86,7 +87,6 @@ namespace CloudyDemos.Aircraft
         [FunctionName("UpdateDistinctFlight")]
         public static void UpdateDistinctFlight([ActivityTrigger] DistinctFlight distinctFlight, ILogger log)
         {   
-            try {
                 var db = cosmosClient.GetDatabase(_databaseId);
                 var flightsContainer = db.GetContainer(_flightsContainerId);
                 var flightSpotterContainer = db.GetContainer(_flightSpotterContainerId);
@@ -97,10 +97,6 @@ namespace CloudyDemos.Aircraft
                     while (feedIterator.HasMoreResults)
                         foreach(DistinctFlight item in feedIterator.ReadNextAsync().GetAwaiter().GetResult())
                             flightSpotterContainer.UpsertItemAsync<DistinctFlight>(item).GetAwaiter().GetResult();
-
-            } catch (Exception ex) {
-                log.LogError(ex, ex.Message);
-            }
         }
 
         [FunctionName("Distinct-Flight-Orchestrator-Start")]

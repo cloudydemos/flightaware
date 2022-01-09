@@ -14,7 +14,7 @@ SELECT c.flight as id, COUNT(c.flight) as count,
 max(c.Timestamp) as last_seen, 
 MIN(ST_DISTANCE({"type": "Point", "coordinates":[-95.80341, 29.75959]}, c.Location)) as closestDistanceInMetresFromMyLocation FROM c group by c.flight
 
--- Get every flight's Full Date and distancein metres from My location from Aircraft Container
+-- Get every flight's Full Date and distance in metres from My location from flights Container
 SELECT c.flight,
 TimestampToDateTime(ROUND(c.Timestamp * 1000)) AS Timestamp, 
 ROUND(ST_DISTANCE({"type": "Point", "coordinates":[-95.80341, 29.75959]}, c.Location)) as distanceInMetresFromMyLocation
@@ -29,3 +29,11 @@ SELECT ROUND(DateTimeToTimestamp(DateTimeAdd("minute", -3, GetCurrentDateTime())
 -- Get all flights that have come in recently (have to cut and paste output from queries above)
 SELECT * from c where c.Timestamp > 1641095820 and c.Timestamp <  1641095835
 SELECT * from c where c.Timestamp > 1641095732
+
+-- find all unprocessed flights
+select * from c where c.lat > 0
+
+-- Get the closest distance from my location of a particular flight from flights Container
+SELECT c.flight as id, COUNT(c.flight) as count, max(c.Timestamp) as last_seen, MIN(ST_DISTANCE({"type": "Point", "coordinates":[-95.80341, 29.75959]}, c.Location)) as closestDistanceInMetresFromMyLocation FROM c where c.flight = "AAL1206" group by c.flight
+-- Get the first time and the altidute a flight came a particular distance from my location
+select c.flight as flight, MIN(c.Timestamp) as TimeStamp, c.alt_geom, c.Location from c where c.flight = "AAL1206" and ST_DISTANCE({"type": "Point", "coordinates":[-95.80341, 29.75959]}, c.Location) = 29.01232798323215 group by c.flight, c.TimeStamp, c.alt_geom, c.Location
