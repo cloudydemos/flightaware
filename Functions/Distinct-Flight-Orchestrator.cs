@@ -90,14 +90,7 @@ namespace CloudyDemos.Aircraft
                 var db = cosmosClient.GetDatabase(_databaseId);
                 var flightsContainer = db.GetContainer(_flightsContainerId);
                 var flightSpotterContainer = db.GetContainer(_flightSpotterContainerId);
-                string query;
-
-                try {
-                    query = string.Format(Query, distinctFlight.id);
-                } catch (FormatException) {
-                    log.LogError("UpdateDistinctFlight Query Exception: " + Query);
-                    return;
-                }
+                string query = Query.Replace("{0}", distinctFlight.id);
                 
                 // We should get only one result
                 using (FeedIterator<DistinctFlight> feedIterator = flightsContainer.GetItemQueryIterator<DistinctFlight>(query))
