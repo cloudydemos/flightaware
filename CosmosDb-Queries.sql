@@ -9,6 +9,12 @@ TimestampToDateTime(ROUND(c.last_seen * 1000)) AS last_seen_utc FROM c
 where c.closestDistanceInMetresFromMyLocation < 1000
 order by c.closestDistanceInMetresFromMyLocation asc
 
+-- Show all flights within 100m and when they were last seen from MyLocation from the flight-spotter Container:
+SELECT c.id, ROUND(c.closestDistanceInMetresFromMyLocation) as closestDistanceInMetresFromMyLocation,
+TimestampToDateTime(ROUND(c.last_seen * 1000)) AS last_seen_utc FROM c 
+where c.closestDistanceInMetresFromMyLocation < 100
+order by c.closestDistanceInMetresFromMyLocation asc
+
 -- Get all Distinct flights and when last seen from Aircraft container
 SELECT c.flight as id, COUNT(c.flight) as count, 
 max(c.Timestamp) as last_seen, 
