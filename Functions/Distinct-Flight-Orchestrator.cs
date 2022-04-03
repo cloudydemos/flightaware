@@ -1,13 +1,12 @@
 using System.Collections.Generic;
-using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Extensions.Logging;
 using Microsoft.Azure.Cosmos;
 using System;
+using System.Text.Json;
+using Azure.Storage.Queues; // Namespace for Queue storage types
+using Azure.Storage.Queues.Models; // Namespace for PeekedMessage
 
 namespace CloudyDemos.Aircraft
 {
@@ -20,17 +19,10 @@ namespace CloudyDemos.Aircraft
     }
     public static class Distinct_Flight_Orchestrator
     {
-        private static readonly string _databaseId = "Aircraft";
-        private static readonly string _flightsContainerId = "flights";
-        private static readonly string _flightSpotterContainerId = "flight-spotter";
-        private static string _query = null; 
-
-        public static string Query { get {
-            if (_query is null)
-                _query = string.IsNullOrEmpty(Environment.GetEnvironmentVariable("queryDefinition")) ? Environment.GetEnvironmentVariable("queryDefinition") : 
-                "SELECT c.flight as id, COUNT(c.flight) as count, max(c.Timestamp) as last_seen, MIN(ST_DISTANCE({\"type\": \"Point\", \"coordinates\":[-95.80341, 29.75959]}, c.Location)) as closestDistanceInMetresFromMyLocation FROM c where c.flight = \"{0}\" group by c.flight";
-            return _query;
-        }}
+        private const string _databaseId = "Aircraft";
+        private const string _flightsContainerId = "flights";
+        private const string _flightSpotterContainerId = "flight-spotter";
+        private const string _unformattedQuery = "SELECT c.flight as id, COUNT(c.flight) as count, max(c.Timestamp) as last_seen, MIN(ST_DISTANCE({0}\"type\": \"Point\", \"coordinates\":[{1}, {2}]{3}, c.Location)) as closestDistanceInMetresFromMyLocation FROM c where c.flight = \"{4}\" group by c.flight";
 
         public static CosmosClient cosmosClient { get {
             if (_cosmosClient is null)
@@ -47,77 +39,86 @@ namespace CloudyDemos.Aircraft
         private static Container flightsContainer = database.GetContainer(_flightsContainerId);
         private static Container flightSpotterContainer = database.GetContainer(_flightSpotterContainerId);
 
-        [FunctionName("Distinct-Flight-Orchestrator")]
-        public static async Task RunOrchestrator([OrchestrationTrigger] IDurableOrchestrationContext context)
+        
+        [StorageAccount("AzureWebJobsStorage")]
+        [FunctionName("ProcessDistinctFlight")]
+        public static void ProcessDistinctFlight([QueueTrigger("distinct-flights")] string message,  ILogger log)
         {
-            var parallelTasks = new List<Task>();
+            if(string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MyLocationLatitude")) || string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MyLocationLongitude")))
+                throw new Exception ("Missing Envinment variables 'MyLocationLatitude' and/or 'MyLocationLongitude'");
 
-            DistinctFlight[] workBatch = await context.CallActivityAsync<DistinctFlight[]>("GetFlights", null);
+            DistinctFlight distinctFlight = JsonSerializer.Deserialize<DistinctFlight>(message);            
+            var db = cosmosClient.GetDatabase(_databaseId);
+            var flightsContainer = db.GetContainer(_flightsContainerId);
+            var flightSpotterContainer = db.GetContainer(_flightSpotterContainerId);
+            string query = string.Format(_unformattedQuery, "{", Environment.GetEnvironmentVariable("MyLocationLatitude"), Environment.GetEnvironmentVariable("MyLocationLongitude"), "}", distinctFlight.id);
 
-            for (int i = 0; i < workBatch.Length; i++)
-            {
-                Task task = context.CallActivityAsync("UpdateDistinctFlight", workBatch[i]);
-                parallelTasks.Add(task);
-            }
-
-            await Task.WhenAll(parallelTasks);
-                   
-        }
-
-        [FunctionName("GetFlights")]
-        public static DistinctFlight[] GetFlights([ActivityTrigger] string name, ILogger log)
-        {
-            string query = "SELECT DISTINCT c.flight as id, 0 as count, 0 as last_seen, 0 as closestDistanceInMetresFromMyLocation FROM c";
-            List<DistinctFlight> distinctFlights = new List<DistinctFlight>();
-            
+            // We should get only one result
             using (FeedIterator<DistinctFlight> feedIterator = flightsContainer.GetItemQueryIterator<DistinctFlight>(query))
-            {
                 while (feedIterator.HasMoreResults)
+                    foreach(DistinctFlight item in feedIterator.ReadNextAsync().GetAwaiter().GetResult())
+                        flightSpotterContainer.UpsertItemAsync<DistinctFlight>(item);
+        }
+        [StorageAccount("AzureWebJobsStorage")]
+        [FunctionName("GetDistinctFlights")]
+        public static async Task GetDistinctFlights([QueueTrigger("distinct-flight-processor")] string message,  ILogger log)
+        {
+             try {
+
+                log.LogTrace(string.Format("Initiating GetDistinctFlights in response to message: {0}", message));
+                string connectionString = Environment.GetEnvironmentVariable("AzureWebJobsStorage");
+                string queueName = Environment.GetEnvironmentVariable("queueName");
+                if(string.IsNullOrEmpty(queueName)) queueName = "distinct-flights";
+                string query = "SELECT DISTINCT c.flight as id, 0 as count, 0 as last_seen, 0 as closestDistanceInMetresFromMyLocation FROM c";
+                List<DistinctFlight> distinctFlights = new List<DistinctFlight>();
+
+                // Instantiate a QueueClient which will be used to create and manipulate the queue
+                QueueClient queueClient = new QueueClient(connectionString, queueName);
+                // Create the queue
+                await queueClient.CreateIfNotExistsAsync();
+                QueueProperties properties = await queueClient.GetPropertiesAsync();
+
+                // Make sure there are no messages on the queue
+                if(properties.ApproximateMessagesCount > 0) {
+                    log.LogError(string.Format("GetDistinctFlights Executed but found {0} messages on the queue - aborting.", properties.ApproximateMessagesCount));
+                    return;
+                }
+                
+                // Get all the unique flights
+                using (FeedIterator<DistinctFlight> feedIterator = flightsContainer.GetItemQueryIterator<DistinctFlight>(query))
                 {
-                    foreach(var item in feedIterator.ReadNextAsync().GetAwaiter().GetResult())
+                    while (feedIterator.HasMoreResults)
                     {
-                        distinctFlights.Add(item);
+                        foreach(var item in feedIterator.ReadNextAsync().GetAwaiter().GetResult())
+                        {
+                            distinctFlights.Add(item);
+                        }
                     }
                 }
+                log.LogInformation(string.Format("Retrieved {0} Flights from the '{1}' container to be upserted into the '{2}' container.", distinctFlights.Count, _flightsContainerId, _flightSpotterContainerId));
+            
+                // Add message that does not expire
+                distinctFlights.ForEach(delegate(DistinctFlight distinctFlight) { queueClient.SendMessageAsync(JsonSerializer.Serialize<DistinctFlight>(distinctFlight), default, TimeSpan.FromSeconds(-1), default); });
+                distinctFlights = null;
+
+            } catch (Exception ex) {
+                log.LogError(ex, ex.Message);
             }
-            log.LogInformation(string.Format("Retrieved {0} Flights from the '{1}' container to be upserted into the '{2}' container.", distinctFlights.Count, _flightsContainerId, _flightSpotterContainerId));
-            return distinctFlights.ToArray();
         }
 
-        [FunctionName("UpdateDistinctFlight")]
-        public static void UpdateDistinctFlight([ActivityTrigger] DistinctFlight distinctFlight, ILogger log)
-        {   
-                var db = cosmosClient.GetDatabase(_databaseId);
-                var flightsContainer = db.GetContainer(_flightsContainerId);
-                var flightSpotterContainer = db.GetContainer(_flightSpotterContainerId);
-                string query = Query.Replace("{0}", distinctFlight.id);
-                
-                // We should get only one result
-                using (FeedIterator<DistinctFlight> feedIterator = flightsContainer.GetItemQueryIterator<DistinctFlight>(query))
-                    while (feedIterator.HasMoreResults)
-                        foreach(DistinctFlight item in feedIterator.ReadNextAsync().GetAwaiter().GetResult())
-                            flightSpotterContainer.UpsertItemAsync<DistinctFlight>(item).GetAwaiter().GetResult();
-        }
-
-        [FunctionName("Distinct-Flight-Orchestrator-Start")]
-        public static async Task Start(
-            [TimerTrigger("0 0 8 * * *")]TimerInfo timerInfo,
-            [DurableClient] IDurableOrchestrationClient starter,
-            ILogger log)
+        [FunctionName("DistinctFlightTimer")]
+        [return: Queue("distinct-flight-processor")]
+        [StorageAccount("AzureWebJobsStorage")]
+        //public static string DistinctFlightTimer([TimerTrigger("0 0 8 * * *")]TimerInfo timerInfo,  ILogger log)
+        public static string DistinctFlightTimer([TimerTrigger("0 * * * * *")]TimerInfo timerInfo,  ILogger log)
         {
-             // Check if an instance with our ID "Distinct-Flight-Orchestrator" already exists or an existing one stopped running (completed/failed/terminated).
-            var existingInstance = await starter.GetStatusAsync("Distinct-Flight-Orchestrator");
-            if (existingInstance == null 
-            || existingInstance.RuntimeStatus == OrchestrationRuntimeStatus.Completed 
-            || existingInstance.RuntimeStatus == OrchestrationRuntimeStatus.Failed 
-            || existingInstance.RuntimeStatus == OrchestrationRuntimeStatus.Terminated)
-            {
-                // An instance with our ID "Distinct-Flight-Orchestrator" doesn't exist or an existing one stopped running, create one.
-                await starter.StartNewAsync("Distinct-Flight-Orchestrator", "Distinct-Flight-Orchestrator", timerInfo);
-                log.LogInformation($"Started new instance of Distinct-Flight-Orchestrator.");
-            } else {
-                log.LogError($"Failed to started new instance of Distinct-Flight-Orchestrator: already running.");
+            QueueClient queueClient = new QueueClient(Environment.GetEnvironmentVariable("AzureWebJobsStorage"), "distinct-flight-processor");
+            if (queueClient.CreateIfNotExists() is null) {
+                QueueProperties properties = queueClient.GetProperties();
+                if(properties.ApproximateMessagesCount > 0) throw new Exception("GetDistinctFlights still processing.");
             }
-        }
+            
+            return string.Format("DistinctFlightTimer Executed at {0} {1}", DateTime.UtcNow.ToShortDateString(), DateTime.UtcNow.ToShortTimeString());
+        }        
     }
 }
