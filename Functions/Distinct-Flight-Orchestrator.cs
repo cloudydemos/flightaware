@@ -109,8 +109,7 @@ namespace CloudyDemos.Aircraft
         [FunctionName("DistinctFlightTimer")]
         [return: Queue("distinct-flight-processor")]
         [StorageAccount("AzureWebJobsStorage")]
-        //public static string DistinctFlightTimer([TimerTrigger("0 0 8 * * *")]TimerInfo timerInfo,  ILogger log)
-        public static string DistinctFlightTimer([TimerTrigger("0 * * * * *")]TimerInfo timerInfo,  ILogger log)
+        public static string DistinctFlightTimer([TimerTrigger("0 0 8 * * *")]TimerInfo timerInfo,  ILogger log)
         {
             QueueClient queueClient = new QueueClient(Environment.GetEnvironmentVariable("AzureWebJobsStorage"), "distinct-flight-processor");
             if (queueClient.CreateIfNotExists() is null) {
