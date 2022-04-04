@@ -97,8 +97,12 @@ namespace CloudyDemos.Aircraft
                 }
                 log.LogInformation(string.Format("Retrieved {0} Flights from the '{1}' container to be upserted into the '{2}' container.", distinctFlights.Count, _flightsContainerId, _flightSpotterContainerId));
             
-                // Add message that does not expire
-                distinctFlights.ForEach(delegate(DistinctFlight distinctFlight) { queueClient.SendMessageAsync(JsonSerializer.Serialize<DistinctFlight>(distinctFlight), default, TimeSpan.FromSeconds(-1), default); });
+                // Add messages that do not expire and which appear after a period of seconds
+                for (int i = 0; i < distinctFlights.Count; i++)
+                {
+                    DistinctFlight distinctFlight = distinctFlights[i];
+                    queueClient.SendMessage(JsonSerializer.Serialize<DistinctFlight>(distinctFlight), TimeSpan.FromSeconds(i), TimeSpan.FromSeconds(-1), default);
+                }
                 distinctFlights = null;
 
             } catch (Exception ex) {
