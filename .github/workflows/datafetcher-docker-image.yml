@@ -27,5 +27,5 @@ jobs:
         platforms: |-
             linux/arm64
         file: Dockerfile.arm64v8
-        push: true
+        pull: true
         tags: data-fetcher:0.0.2-arm64v8
