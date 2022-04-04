@@ -15,4 +15,4 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Build the Docker image
-      run: docker build . --file DataFetcher/modules/DataFetcher/Dockerfile.arm64v8 --tag data-fetcher:0.0.1-arm64v8
+      run: docker build . --platform linux/amd64 --file DataFetcher/modules/DataFetcher/Dockerfile.arm64v8 --tag data-fetcher:0.0.1-arm64v8
