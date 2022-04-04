@@ -21,10 +21,11 @@ jobs:
     - name: Build the Docker image
       uses: docker/build-push-action@v2
       with:
-        context: .
+        context: "{{defaultContext}}:DataFetcher/modules/DataFetcher/"
         platforms: |-
             linux/arm64
         file: DataFetcher/modules/DataFetcher/Dockerfile.arm64v8
         pull: true
         cache-from: type=gha
         cache-to: type=gha
+        tags: data-fetcher:0.0.1-arm64v8
