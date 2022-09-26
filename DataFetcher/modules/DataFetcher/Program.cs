@@ -82,11 +82,7 @@ namespace CloudyDemos.DataProcessor
                         Byte[] bytes = await response.Content.ReadAsByteArrayAsync();
                         PiAware piAware = JsonSerializer.Deserialize<PiAware>(bytes);
 
-                        if (lastTime == piAware.now)
-                        {
-                            Console.WriteLine(string.Format("Duplicate Timestamp {0} Detected - skipping.", lastTime));
-                        }
-                        else
+                        if (lastTime != piAware.now)
                         {
                             using (var eventMessage = new Message(bytes))
                             {
@@ -95,6 +91,9 @@ namespace CloudyDemos.DataProcessor
                                 eventMessage.Properties.Add("CountOfAircraft", piAware.aircraft.Count.ToString());
                                 eventMessage.Properties.Add("SequenceNumber", count.ToString());
                                 await moduleClient.SendEventAsync("PiAwareData", eventMessage);
+                                // This route needs to be added to get these message to IoT Hub:
+                                // "FROM /messages/modules/datafetcher/outputs/PiAwareData INTO $upstream"
+
                             }
                             count++;
                         }
