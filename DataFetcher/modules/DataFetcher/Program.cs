@@ -58,13 +58,13 @@ namespace CloudyDemos.DataProcessor
                 .Build();
 
             TransportType transportType = configuration.GetValue("ClientTransportType", TransportType.Amqp_Tcp_Only);
-            PiAwareUri = configuration.GetValue("PiAwareUri", "http://192.168.86.60:8080/data/aircraft.json");
+            PiAwareUri = configuration.GetValue("PiAwareUri", "http://192.168.86.78:8080/data/aircraft.json");
 
             ModuleClient moduleClient = await ModuleClient.CreateFromEnvironmentAsync(transportType);
             await moduleClient.OpenAsync();
             await SendAircraftData(moduleClient);
 
-            Console.WriteLine("DataProcessor Init() finished.");
+            Console.WriteLine("DataProcessor Init() finished - using " + PiAwareUri);
         }
 
         static async Task SendAircraftData(ModuleClient moduleClient)
