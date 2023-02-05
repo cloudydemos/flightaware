@@ -11,9 +11,9 @@
             "loggingOptions": "",
             "registryCredentials": {
               "cloudyflightaware": {
-                "username": "$CONTAINER_REGISTRY_USERNAME_cloudyflightaware",
-                "password": "$CONTAINER_REGISTRY_PASSWORD_cloudyflightaware",
-                "address": "cloudyflightaware.azurecr.io"
+                "username": "<CONTAINER_REGISTRY_USERNAME>",
+                "password": "<CONTAINER_REGISTRY_PASSWORD>",
+                "address": "<CONTAINER_REGISTRY_SERVER>"
               }
             }
           }
@@ -22,7 +22,7 @@
           "edgeAgent": {
             "type": "docker",
             "settings": {
-              "image": "mcr.microsoft.com/azureiotedge-agent:1.2",
+              "image": "mcr.microsoft.com/azureiotedge-agent:1.4",
               "createOptions": {}
             }
           },
@@ -31,7 +31,7 @@
             "status": "running",
             "restartPolicy": "always",
             "settings": {
-              "image": "mcr.microsoft.com/azureiotedge-hub:1.2",
+              "image": "mcr.microsoft.com/azureiotedge-hub:1.4",
               "createOptions": {
                 "HostConfig": {
                   "PortBindings": {
@@ -63,17 +63,7 @@
             "status": "running",
             "restartPolicy": "always",
             "settings": {
-              "image": "${MODULES.DataFetcher}",
-              "createOptions": {}
-            }
-          },
-          "SimulatedTemperatureSensor": {
-            "version": "1.0",
-            "type": "docker",
-            "status": "running",
-            "restartPolicy": "always",
-            "settings": {
-              "image": "mcr.microsoft.com/azureiotedge-simulated-temperature-sensor:1.0",
+              "image": "<IMAGE>",
               "createOptions": {}
             }
           }
@@ -84,8 +74,7 @@
       "properties.desired": {
         "schemaVersion": "1.1",
         "routes": {
-          "DataFetcherToIoTHub": "FROM /messages/modules/DataFetcher/outputs/* INTO $upstream",
-          "sensorToDataFetcher": "FROM /messages/modules/SimulatedTemperatureSensor/outputs/temperatureOutput INTO BrokeredEndpoint(\"/modules/DataFetcher/inputs/input1\")"
+          "DataFetcherToIoTHub": "FROM /messages/modules/DataFetcher/outputs/* INTO $upstream"
         },
         "storeAndForwardConfiguration": {
           "timeToLiveSecs": 7200
