@@ -22,6 +22,8 @@ Build Steps for IoT Edge Module:
 CONTAINER_REGISTRY_SERVER="cloudyflightaware.azurecr.io"
 CONTAINER_REGISTRY_USERNAME="cloudyflightaware"
 CONTAINER_REGISTRY_PASSWORD="<registry_password>"
+IMAGE="cloudyflightaware.azurecr.io/datafetcher:0.0.2-arm64v8"
+
 PiAwareUri="http://<Your PIAware IP>:8080/data/aircraft.json"
 
 3) Run "iotedgedev build"
@@ -36,7 +38,7 @@ docker push myacr.azurecr.io/datafetcher:0.0.2-arm64v8
 find . -type f -exec sed -i 's/<CONTAINER_REGISTRY_SERVER>/$CONTAINER_REGISTRY_SERVER/g' {} +
 find . -type f -exec sed -i 's/<CONTAINER_REGISTRY_USERNAME>/$CONTAINER_REGISTRY_USERNAME/g' {} +
 find . -type f -exec sed -i 's/<CONTAINER_REGISTRY_PASSWORD>/$CONTAINER_REGISTRY_PASSWORD/g' {} +
-find . -type f -exec sed -i 's/<IMAGE>/cloudyflightaware.azurecr.io/datafetcher:0.0.2-arm64v8/g' {} +
+find . -type f -exec sed -i 's/<IMAGE>/$IMAGE/g' {} +
 
 6) Login to Azure so we can update IoT Edge:
    az login --use-device-code
